@@ -1,0 +1,29 @@
+---
+abstract: 'Mojolicious::Lite webapp that lets you search (with regexp) and display CPAN modules documentation'
+author:
+  - 'Ahmad Syaltut <Isyaltut@gmail.com>'
+build_requires:
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.130880'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: App-perldolicious
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  IO::Zlib: 0
+  Module::CoreList: 0
+  Mojolicious: 0
+  Pod::Cpandoc: 0
+  perl: 5.010000
+resources:
+  homepage: https://github.com/Syaltut/perl-App-perldolicicous
+  repository: https://github.com/Syaltut/perl-App-perldolicicous.git
+version: 0.001

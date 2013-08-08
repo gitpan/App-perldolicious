@@ -1,0 +1,6 @@
+\.DS_Store
+\.hg/
+\.git/
+MYMETA.+
+MANIFEST\.bak
+Makefile$
