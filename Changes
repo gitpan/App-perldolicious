@@ -1,4 +1,8 @@
 Revision history for perl module App::perldolicious
 
+0.002 2013-08-17
+	- use IPC::System::Simple::capturex to capture the output of cpandoc
+	- switch to Module::Build
+	- add LICENSE
 0.001 2013-08-08
 	- initial commit

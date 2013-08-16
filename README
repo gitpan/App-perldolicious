@@ -3,7 +3,7 @@ NAME
     regexp) and display CPAN modules documentation
 
 VERSION
-    Version 0.001.
+    Version 0.002.
 
 SYNOPSIS
       perldolicious daemon
