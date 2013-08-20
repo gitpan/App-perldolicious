@@ -12,7 +12,6 @@ Module::Build->new(
         'Module::CoreList'    => '2.91',
         'Pod::Cpandoc'        => '0.15',
         'IO::Zlib'            => '1.10',
-        'IPC::System::Simple' => '1.21',
     },
     meta_merge => {
         resources => {
