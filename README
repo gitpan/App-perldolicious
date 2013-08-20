@@ -3,7 +3,7 @@ NAME
     regexp) and display CPAN modules documentation
 
 VERSION
-    Version 0.002.
+    Version 0.003.
 
 SYNOPSIS
       perldolicious daemon
@@ -66,6 +66,11 @@ TODOS
     *   Add the ability to recognize out-of-date cpan package file and
         redownload it (or probably add an option to auto download it after
         specified amount of time).
+
+SEE ALSO
+    *   Mojolicious
+
+    *   Pod::Cpandoc
 
 AUTHOR
     Ahmad Syaltut <Isyaltut@gmail.com>

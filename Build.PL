@@ -18,7 +18,7 @@ Module::Build->new(
         resources => {
             homepage => 'https://github.com/Syaltut/perl-App-perldolicicous',
             repository =>
-              'https://github.com/Syaltut/perl-App-perldolicicous.git',
+              'git://github.com/Syaltut/perl-App-perldolicicous.git',
         }
       }
 

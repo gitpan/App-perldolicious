@@ -15,7 +15,7 @@ name: App-perldolicious
 provides:
   App::perldolicious:
     file: lib/App/perldolicious.pm
-    version: 0.002
+    version: 0.003
 requires:
   IO::Zlib: 1.10
   IPC::System::Simple: 1.21
@@ -25,5 +25,5 @@ requires:
 resources:
   homepage: https://github.com/Syaltut/perl-App-perldolicicous
   license: http://dev.perl.org/licenses/
-  repository: https://github.com/Syaltut/perl-App-perldolicicous.git
-version: 0.002
+  repository: git://github.com/Syaltut/perl-App-perldolicicous.git
+version: 0.003

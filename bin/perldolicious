@@ -7,12 +7,11 @@ use 5.010;
 use File::Path ();
 use File::Spec::Functions qw(catfile);
 use IO::Zlib            ();
-use IPC::System::Simple ();
 use Module::CoreList    ();
 use Mojo::JSON          ();
 use Storable            ();
 
-our $VERSION = '0.002';
+our $VERSION = '0.003';
 $VERSION = eval $VERSION;
 
 sub parse_cpan_package_file {
@@ -146,10 +145,7 @@ helper perldoc => sub {
         else                   { '-t' }
     };
 
-    local $@;
-    eval { $doc = IPC::System::Simple::capturex('cpandoc', $args, $module); };
-
-    $doc = undef if $@;
+    $doc = `cpandoc $args $module`;
 
     return $doc;
 };
@@ -207,7 +203,7 @@ get '/doc/:module' => sub {
     my $release_date  = Module::CoreList->first_release($module);
 
     # TODO: add this for other operating systems
-    my @known_temp_dirs = ("/var/folders", "/tmp/");
+    my @known_temp_dirs = (qr{/var/folders}, qr{/tmp/}, qr{Local\\Temp});
     my $location = $self->perldoc($module, { location => 1 });
 
     if ($location) {
@@ -369,7 +365,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.002.
+Version 0.003.
 
 =head1 SYNOPSIS
 
@@ -454,6 +450,16 @@ memory.
 =item * Add the ability to recognize out-of-date cpan package file and
 redownload it (or probably add an option to auto download it after
 specified amount of time).
+
+=back
+
+=head1 SEE ALSO
+
+=over
+
+=item * L<Mojolicious>
+
+=item * L<Pod::Cpandoc>
 
 =back
 
