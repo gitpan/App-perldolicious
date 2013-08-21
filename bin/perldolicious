@@ -6,12 +6,13 @@ use Mojolicious::Lite;
 use 5.010;
 use File::Path ();
 use File::Spec::Functions qw(catfile);
-use IO::Zlib            ();
-use Module::CoreList    ();
-use Mojo::JSON          ();
-use Storable            ();
+use IO::Zlib         ();
+use Module::Path     ();
+use Module::CoreList ();
+use Mojo::JSON       ();
+use Storable         ();
 
-our $VERSION = '0.004';
+our $VERSION = '0.005';
 $VERSION = eval $VERSION;
 
 sub parse_cpan_package_file {
@@ -140,9 +141,8 @@ helper perldoc => sub {
     my $doc;
 
     my $args = do {
-        if    ($p->{source})   { '-m' }
-        elsif ($p->{location}) { '-l' }
-        else                   { '-t' }
+        if   ($p->{source}) { '-m' }
+        else                { '-t' }
     };
 
     $doc = `cpandoc $args $module`;
@@ -204,7 +204,7 @@ get '/doc/:module' => sub {
 
     # TODO: add this for other operating systems
     my @known_temp_dirs = (qr{/var/folders}, qr{/tmp/}, qr{Local\\Temp});
-    my $location = $self->perldoc($module, { location => 1 });
+    my $location = Module::Path::module_path($module);
 
     if ($location) {
         $location = undef
@@ -365,7 +365,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.004.
+Version 0.005.
 
 =head1 SYNOPSIS
 

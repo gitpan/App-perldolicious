@@ -23,6 +23,7 @@
          "requires" : {
             "IO::Zlib" : "1.10",
             "Module::CoreList" : "2.91",
+            "Module::Path" : "0.09",
             "Mojolicious" : "4.07",
             "Pod::Cpandoc" : "0.15"
          }
@@ -31,7 +32,7 @@
    "provides" : {
       "App::perldolicious" : {
          "file" : "lib/App/perldolicious.pm",
-         "version" : "0.004"
+         "version" : "0.005"
       }
    },
    "release_status" : "stable",
@@ -44,5 +45,5 @@
          "url" : "git://github.com/Syaltut/perl-App-perldolicicous.git"
       }
    },
-   "version" : "0.004"
+   "version" : "0.005"
 }

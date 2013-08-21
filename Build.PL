@@ -10,6 +10,7 @@ Module::Build->new(
     requires          => {
         'Mojolicious'         => '4.07',
         'Module::CoreList'    => '2.91',
+        'Module::Path'        => '0.09',
         'Pod::Cpandoc'        => '0.15',
         'IO::Zlib'            => '1.10',
     },
