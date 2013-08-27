@@ -16,9 +16,9 @@ Module::Build->new(
     },
     meta_merge => {
         resources => {
-            homepage => 'https://github.com/Syaltut/perl-App-perldolicicous',
+            homepage => 'https://github.com/Syaltut/perl-App-perldolicious',
             repository =>
-              'git://github.com/Syaltut/perl-App-perldolicicous.git',
+              'git://github.com/Syaltut/perl-App-perldolicious.git',
         }
       }
 

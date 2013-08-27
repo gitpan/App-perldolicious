@@ -1,4 +1,7 @@
 Revision history for perl module App::perldolicious
+
+0.006 2013-08-27
+	- add configuration item auto_delete
 0.005 2013-08-21
 	- use Module::Path to find modules location
 0.003 2013-08-20

@@ -12,7 +12,7 @@ use Module::CoreList ();
 use Mojo::JSON       ();
 use Storable         ();
 
-our $VERSION = '0.005';
+our $VERSION = '0.006';
 $VERSION = eval $VERSION;
 
 sub parse_cpan_package_file {
@@ -82,47 +82,67 @@ helper initial_debug => sub {
         "Modules cache file: " . app->config("modules_cache_file"));
 };
 
+helper setup_modules_file => sub {
+    my $file  = app->config('modules_cache_file');
+    my $limit = app->config('auto_delete');
+
+    die "Configuration auto_delete: $limit doesn't look like number\n"
+      unless Scalar::Util::looks_like_number($limit);
+
+    # file does not exist or file exists but it's older than the
+    # specified limit (in days)
+    if (not -f $file
+        or -f $file and -M $file > $limit)
+    {
+
+        if (-f $file) {
+            app->log->info(
+                "The file $file is older than $limit days. Deleting it...");
+            unlink $file or die $!;
+        }
+
+        app->log->info("Please wait, generating a list of modules to $file")
+          unless app->config('quiet');
+
+        write_modules($file, app->config('cpan_package_file'));
+    }
+};
+
 helper initialize => sub {
     my $confdir = $ENV{PERLDOLICIOUS_HOME}
       || catfile($ENV{HOME}, '.perldolicious');
 
-    unless (-d $confdir) {
-        File::Path::make_path($confdir)
-          or die "Could not create directory $confdir\n";
-    }
+    File::Path::make_path($confdir)
+      or die "Could not create directory $confdir"
+      unless -d $confdir;
 
     my $confile = catfile($confdir, 'config.json');
-    my $conf;
+    my $conf = {
+        cpan_package_file => catfile(
+            $ENV{HOME}, qw(.cpan sources modules 02packages.details.txt.gz)
+        ),
+        modules_cache_file => catfile($confdir, "modules.storable"),
+        auto_delete        => 7,
+        quiet              => 0
+
+    };
 
     if (-f $confile) {
-        $conf = read_json_config($confile);
+        my $user_conf = read_json_config($confile) || {};
+        %$conf = (%$conf, %$user_conf);    # merge config
     }
 
     app->config($_ => $conf->{$_}) for keys %$conf;
 
-    app->config->{cpan_package_file} ||=
-      catfile($ENV{HOME},
-        qw(.cpan sources modules 02packages.details.txt.gz));
-
-    app->config->{modules_cache_file} ||=
-      catfile($confdir, "modules.storable");
-
-    unless (-f app->config('modules_cache_file')) {
-        app->log->info('Please wait, generating a list of modules to '
-              . app->config('modules_cache_file'))
-          unless app->config('quiet');
-        write_modules(
-            app->config('modules_cache_file'),
-            app->config('cpan_package_file'),
-        );
-    }
-
+    app->setup_modules_file;
     app->initial_debug($confile, $confdir) unless app->config('quiet');
 
     my $logfile = catfile($confdir, 'server.log');
-    if ((-f $logfile) and ((-s $logfile) > 2_000_000)) {
+    if (-f $logfile and -s $logfile > 2_000_000) {
         unlink $logfile or die "Could not delete '$logfile'";
+        app->log->info("Deleting $logfile") unless app->config('quiet');
     }
+
     app->log->path($logfile);
 };
 
@@ -145,7 +165,7 @@ helper perldoc => sub {
         else                { '-t' }
     };
 
-    $doc = `cpandoc $args $module`;
+    chomp($doc = `cpandoc $args $module`);
 
     return $doc;
 };
@@ -365,7 +385,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.005.
+Version 0.006.
 
 =head1 SYNOPSIS
 
@@ -407,7 +427,7 @@ in JSON format). Here are the recognized options:
 
 =over
 
-=item * cpan_package_file - use a different cpan package file. I don't
+=item * B<cpan_package_file>. Use a different cpan package file. I don't
 know what people call this file, so I'm going to refer it as "cpan
 package file" throughout this document. Default location is
 F<~/.cpan/sources/modules/02packages.details.txt.gz>. Example for
@@ -417,11 +437,15 @@ Strawbery Perl users:
       "cpan_package_file": "c:/StrawberryPerl/cpan/sources/modules/02packages.details.txt.gz"
   }
 
-=item * modules_cache_file - specify different location to store the
-modules list cache file. Default is
+=item * B<modules_cache_file>. Specify different location to store the
+modules list cache file. Defaults to
 F<~/.perldolicious/modules.storable>.
 
-=item * quiet - tell B<perldolicious> to be more quiet. Default: false.
+=item * B<quiet>. Tell B<perldolicious> to be more quiet. Default:
+false.
+
+=item * B<auto_delete>. Delete C<modules_cache_file> and generate a
+new one if it's older than the specified number (in days).
 
 =back
 
@@ -430,6 +454,7 @@ Example:
   $ cat ~/.perldolicious/config.json
   {
       "quiet": 1,
+      "auto_delete": 5,
       "modules_cache_file": "/Users/Syaltut/.modules"
   }
 
