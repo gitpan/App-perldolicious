@@ -1,5 +1,8 @@
 Revision history for perl module App::perldolicious
 
+0.007 2013-08-28
+	- add configuration item auto_download which practically
+	  deprecates the previous config item auto_delete
 0.006 2013-08-27
 	- add configuration item auto_delete
 0.005 2013-08-21

@@ -2,22 +2,36 @@
 # -*- mode: perl -*- # cperl-mode doesn't recognize the DATA section  -_-
 
 use Mojolicious::Lite;
-
 use 5.010;
-use File::Path ();
+
+use File::Basename ();
+use File::Path     ();
 use File::Spec::Functions qw(catfile);
+use File::Temp       ();
 use IO::Zlib         ();
-use Module::Path     ();
+use LWP::Simple      ();
 use Module::CoreList ();
+use Module::Path     ();
 use Mojo::JSON       ();
+use Scalar::Util     ();
 use Storable         ();
 
-our $VERSION = '0.006';
+our $VERSION = '0.007';
 $VERSION = eval $VERSION;
 
-sub parse_cpan_package_file {
-    my $cpan_package_file = shift;
-    die "$cpan_package_file doesn't exist\n" unless -f $cpan_package_file;
+sub download_cpan_package_file {
+    @_ == 2 or die 'invalid arguments';
+    my ($url, $download_location) = @_;
+
+    my $status = LWP::Simple::getstore($url, $download_location);
+    die "Could not retrieve from $url, status: $status"
+      unless LWP::Simple::is_success($status);
+    return 1;
+}
+
+sub get_modules {
+    my $cpan_package_file = shift or die 'no file specified';
+    die "$cpan_package_file doesn't exist" unless -f $cpan_package_file;
 
     my $fh = IO::Zlib->new($cpan_package_file, 'r')
       or die "Could not open '$cpan_package_file': $!";
@@ -34,8 +48,10 @@ sub parse_cpan_package_file {
 }
 
 sub write_modules {
+    @_ == 2 or die 'invalid arguments';
     my ($modules_cache_file, $cpan_package_file) = @_;
-    my $modules = parse_cpan_package_file($cpan_package_file);
+
+    my $modules = get_modules($cpan_package_file);
     Storable::nstore($modules, $modules_cache_file);
 }
 
@@ -45,14 +61,7 @@ sub compile_pattern {
 
     local $@;
     eval {
-        $pattern = do {
-            if ($p->{ignore_case}) {
-                qr{$pattern}i;
-            }
-            else {
-                qr{$pattern};
-            }
-        };
+        $pattern = $p->{ignore_case} ? qr{$pattern}i : qr{$pattern};
     };
     die "Invalid regular expression\n" if $@;
 
@@ -60,7 +69,7 @@ sub compile_pattern {
 }
 
 sub read_json_config {
-    my $config_file = shift;
+    my $config_file = shift or die 'no file specified';
 
     open my $fh, '<', $config_file
       or die "Could not open '$config_file': $!";
@@ -75,56 +84,76 @@ sub read_json_config {
 helper initial_debug => sub {
     my ($self, $config_file, $config_dir) = @_;
 
+    return if app->config('quiet');
+
     app->log->info("Config dir: $config_dir");
     app->log->info("Loaded config file: $config_file") if -f $config_file;
-    app->log->info("CPAN package file: " . app->config('cpan_package_file'));
     app->log->info(
-        "Modules cache file: " . app->config("modules_cache_file"));
+        'Loaded cache file: ' . app->config('modules_cache_file'));
 };
 
 helper setup_modules_file => sub {
-    my $file  = app->config('modules_cache_file');
-    my $limit = app->config('auto_delete');
+    my $cache_file = app->config('modules_cache_file');
+    my $limit      = app->config('auto_download');
+    my $quiet      = app->config('quiet');
 
-    die "Configuration auto_delete: $limit doesn't look like number\n"
+    die "Configuration auto_download: $limit doesn't look like number\n"
       unless Scalar::Util::looks_like_number($limit);
 
     # file does not exist or file exists but it's older than the
     # specified limit (in days)
-    if (not -f $file
-        or -f $file and -M $file > $limit)
+    if (not -f $cache_file
+        or -f $cache_file and -M $cache_file > $limit)
     {
 
-        if (-f $file) {
-            app->log->info(
-                "The file $file is older than $limit days. Deleting it...");
-            unlink $file or die $!;
+        if (-f $cache_file) {
+            app->log->info("Deleting cache file $cache_file") unless $quiet;
+            unlink $cache_file or die $!;
         }
 
-        app->log->info("Please wait, generating a list of modules to $file")
-          unless app->config('quiet');
+        my $url    = 'http://www.cpan.org/modules/02packages.details.txt.gz';
+        my $tmpdir = File::Temp->newdir;
+        my $download_location = File::Spec->catfile($tmpdir->dirname,
+            File::Basename::basename($url));
 
-        write_modules($file, app->config('cpan_package_file'));
+        app->log->info("Downloading $url to $download_location")
+          unless $quiet;
+        download_cpan_package_file($url, $download_location);
+
+        app->log->info("Please wait, caching modules to $cache_file")
+          unless $quiet;
+        write_modules($cache_file, $download_location);
+
+        undef $tmpdir; # delete the temp dir and its contents
     }
 };
 
+helper setup_log => sub {
+    my ($self, $confdir) = @_;
+    my $logfile = catfile($confdir, 'server.log');
+    if (-f $logfile and -s $logfile > 2_000_000) {
+        unlink $logfile or die "Could not delete '$logfile'";
+        app->log->info("Deleting $logfile") unless app->config('quiet');
+    }
+
+    app->log->path($logfile);
+};
+
 helper initialize => sub {
+    my $quiet   = app->config('quiet');
     my $confdir = $ENV{PERLDOLICIOUS_HOME}
       || catfile($ENV{HOME}, '.perldolicious');
 
-    File::Path::make_path($confdir)
-      or die "Could not create directory $confdir"
-      unless -d $confdir;
+    unless (-d $confdir) {
+        File::Path::make_path($confdir)
+          or die "Could not create directory $confdir";
+    }
 
     my $confile = catfile($confdir, 'config.json');
     my $conf = {
-        cpan_package_file => catfile(
-            $ENV{HOME}, qw(.cpan sources modules 02packages.details.txt.gz)
-        ),
-        modules_cache_file => catfile($confdir, "modules.storable"),
-        auto_delete        => 7,
+        modules_cache_file => catfile($confdir, 'modules.storable'),
+        auto_download      => 14,               # 2 weeks
         quiet              => 0
-
     };
 
     if (-f $confile) {
@@ -135,15 +164,8 @@ helper initialize => sub {
     app->config($_ => $conf->{$_}) for keys %$conf;
 
     app->setup_modules_file;
-    app->initial_debug($confile, $confdir) unless app->config('quiet');
-
-    my $logfile = catfile($confdir, 'server.log');
-    if (-f $logfile and -s $logfile > 2_000_000) {
-        unlink $logfile or die "Could not delete '$logfile'";
-        app->log->info("Deleting $logfile") unless app->config('quiet');
-    }
-
-    app->log->path($logfile);
+    app->initial_debug($confile, $confdir) unless $quiet;
+    app->setup_log($confdir);
 };
 
 helper find_modules => sub {
@@ -160,11 +182,7 @@ helper perldoc => sub {
     my ($self, $module, $p) = @_;
     my $doc;
 
-    my $args = do {
-        if   ($p->{source}) { '-m' }
-        else                { '-t' }
-    };
-
+    my $args = $p->{source} ? '-m' : '-t';
     chomp($doc = `cpandoc $args $module`);
 
     return $doc;
@@ -385,7 +403,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.006.
+Version 0.007.
 
 =head1 SYNOPSIS
 
@@ -427,25 +445,18 @@ in JSON format). Here are the recognized options:
 
 =over
 
-=item * B<cpan_package_file>. Use a different cpan package file. I don't
-know what people call this file, so I'm going to refer it as "cpan
-package file" throughout this document. Default location is
-F<~/.cpan/sources/modules/02packages.details.txt.gz>. Example for
-Strawbery Perl users:
-
-  {
-      "cpan_package_file": "c:/StrawberryPerl/cpan/sources/modules/02packages.details.txt.gz"
-  }
-
 =item * B<modules_cache_file>. Specify different location to store the
 modules list cache file. Defaults to
 F<~/.perldolicious/modules.storable>.
 
-=item * B<quiet>. Tell B<perldolicious> to be more quiet. Default:
-false.
+=item * B<auto_download>. Delete C<modules_cache_file> and generate a
+new one by downloading the cpan package file
+F<02packages.details.txt.gz> if it's older than the specified number
+(in days). Default is set to 14 (two weeks).
 
-=item * B<auto_delete>. Delete C<modules_cache_file> and generate a
-new one if it's older than the specified number (in days).
+=item * B<quiet>. Send the server log to the file
+F<~/.perldolicious/server.log> instead of to C<STDERR>. Default:
+false.
 
 =back
 
@@ -454,7 +465,7 @@ Example:
   $ cat ~/.perldolicious/config.json
   {
       "quiet": 1,
-      "auto_delete": 5,
+      "auto_download": 5,
       "modules_cache_file": "/Users/Syaltut/.modules"
   }
 
@@ -465,16 +476,6 @@ Example:
 =item * No pagination - which means you shouldn't use patterns like
 C<.*> if you don't want your browser to eat up all of your computer's
 memory.
-
-=back
-
-=head1 TODOS
-
-=over
-
-=item * Add the ability to recognize out-of-date cpan package file and
-redownload it (or probably add an option to auto download it after
-specified amount of time).
 
 =back
 

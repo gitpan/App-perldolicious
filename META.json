@@ -21,18 +21,26 @@
       },
       "runtime" : {
          "requires" : {
+            "File::Basename" : "0",
+            "File::Path" : "0",
+            "File::Spec" : "0",
+            "File::Temp" : "0",
             "IO::Zlib" : "1.10",
+            "LWP::Simple" : "0",
             "Module::CoreList" : "2.91",
             "Module::Path" : "0.09",
+            "Mojo::JSON" : "0",
             "Mojolicious" : "4.07",
-            "Pod::Cpandoc" : "0.15"
+            "Pod::Cpandoc" : "0.15",
+            "Scalar::Util" : "0",
+            "Storable" : "0"
          }
       }
    },
    "provides" : {
       "App::perldolicious" : {
          "file" : "lib/App/perldolicious.pm",
-         "version" : "0.006"
+         "version" : "0.007"
       }
    },
    "release_status" : "stable",
@@ -45,5 +53,5 @@
          "url" : "git://github.com/Syaltut/perl-App-perldolicious.git"
       }
    },
-   "version" : "0.006"
+   "version" : "0.007"
 }

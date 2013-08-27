@@ -3,7 +3,7 @@ NAME
     regexp) and display CPAN modules documentation
 
 VERSION
-    Version 0.006.
+    Version 0.007.
 
 SYNOPSIS
       perldolicious daemon
@@ -35,41 +35,29 @@ CONFIGURATIONS
     file, stored at ~/.perldolicious/config.json (written in JSON format).
     Here are the recognized options:
 
-    *   cpan_package_file. Use a different cpan package file. I don't know
-        what people call this file, so I'm going to refer it as "cpan
-        package file" throughout this document. Default location is
-        ~/.cpan/sources/modules/02packages.details.txt.gz. Example for
-        Strawbery Perl users:
-
-          {
-              "cpan_package_file": "c:/StrawberryPerl/cpan/sources/modules/02packages.details.txt.gz"
-          }
-
     *   modules_cache_file. Specify different location to store the modules
         list cache file. Defaults to ~/.perldolicious/modules.storable.
 
-    *   quiet. Tell perldolicious to be more quiet. Default: false.
+    *   auto_download. Delete "modules_cache_file" and generate a new one by
+        downloading the cpan package file 02packages.details.txt.gz if it's
+        older than the specified number (in days). Default is set to 14 (two
+        weeks).
 
-    *   auto_delete. Delete "modules_cache_file" and generate a new one if
-        it's older than the specified number (in days).
+    *   quiet. Send the server log to the file ~/.perldolicious/server.log
+        instead of to "STDERR". Default: false.
 
     Example:
 
       $ cat ~/.perldolicious/config.json
       {
           "quiet": 1,
-          "auto_delete": 5,
+          "auto_download": 5,
           "modules_cache_file": "/Users/Syaltut/.modules"
       }
 
 LIMITATIONS
     *   No pagination - which means you shouldn't use patterns like ".*" if
         you don't want your browser to eat up all of your computer's memory.
-
-TODOS
-    *   Add the ability to recognize out-of-date cpan package file and
-        redownload it (or probably add an option to auto download it after
-        specified amount of time).
 
 SEE ALSO
     *   Mojolicious
