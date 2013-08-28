@@ -16,7 +16,7 @@ use Mojo::JSON       ();
 use Scalar::Util     ();
 use Storable         ();
 
-our $VERSION = '0.007';
+our $VERSION = '0.008';
 $VERSION = eval $VERSION;
 
 sub download_cpan_package_file {
@@ -60,9 +60,7 @@ sub compile_pattern {
     die "No pattern specified\n" unless $pattern;
 
     local $@;
-    eval {
-        $pattern = $p->{ignore_case} ? qr{$pattern}i : qr{$pattern};
-    };
+    eval { $pattern = $p->{ignore_case} ? qr{$pattern}i : qr{$pattern}; };
     die "Invalid regular expression\n" if $@;
 
     return $pattern;
@@ -81,21 +79,9 @@ sub read_json_config {
     return Mojo::JSON->new()->decode($bytes);
 }
 
-helper initial_debug => sub {
-    my ($self, $config_file, $config_dir) = @_;
-
-    return if app->config('quiet');
-
-    app->log->info("Config dir: $config_dir");
-    app->log->info("Loaded config file: $config_file") if -f $config_file;
-    app->log->info(
-        'Loaded cache file: ' . app->config('modules_cache_file'));
-};
-
 helper setup_modules_file => sub {
     my $cache_file = app->config('modules_cache_file');
     my $limit      = app->config('auto_download');
-    my $quiet      = app->config('quiet');
 
     die "Configuration auto_download: $limit doesn't look like number\n"
       unless Scalar::Util::looks_like_number($limit);
@@ -107,24 +93,22 @@ helper setup_modules_file => sub {
     {
 
         if (-f $cache_file) {
-            app->log->info("Deleting cache file $cache_file") unless $quiet;
+            app->log->info("Deleting cache file $cache_file");
             unlink $cache_file or die $!;
         }
 
         my $url    = 'http://www.cpan.org/modules/02packages.details.txt.gz';
         my $tmpdir = File::Temp->newdir;
-        my $download_location = File::Spec->catfile($tmpdir->dirname,
-            File::Basename::basename($url));
+        my $download_location =
+          catfile($tmpdir->dirname, File::Basename::basename($url));
 
-        app->log->info("Downloading $url to $download_location")
-          unless $quiet;
+        app->log->info("Downloading $url to $download_location");
         download_cpan_package_file($url, $download_location);
 
-        app->log->info("Please wait, caching modules to $cache_file")
-          unless $quiet;
+        app->log->info("Please wait, caching modules to $cache_file");
         write_modules($cache_file, $download_location);
 
-        undef $tmpdir; # delete the temp dir and its contents
+        undef $tmpdir;    # delete the temp dir and its contents
     }
 };
 
@@ -133,14 +117,13 @@ helper setup_log => sub {
     my $logfile = catfile($confdir, 'server.log');
     if (-f $logfile and -s $logfile > 2_000_000) {
         unlink $logfile or die "Could not delete '$logfile'";
-        app->log->info("Deleting $logfile") unless app->config('quiet');
+        app->log->info("Deleting $logfile");
     }
 
-    app->log->path($logfile);
+    app->log->path($logfile) if app->config('quiet');
 };
 
 helper initialize => sub {
-    my $quiet   = app->config('quiet');
     my $confdir = $ENV{PERLDOLICIOUS_HOME}
       || catfile($ENV{HOME}, '.perldolicious');
 
@@ -163,9 +146,13 @@ helper initialize => sub {
 
     app->config($_ => $conf->{$_}) for keys %$conf;
 
-    app->setup_modules_file;
-    app->initial_debug($confile, $confdir) unless $quiet;
     app->setup_log($confdir);
+    app->setup_modules_file;
+
+    app->log->info('*** STARTING A NEW SESSION ***');
+    app->log->info("Config dir: $confdir");
+    app->log->info("Loaded config file: $confile") if -f $confile;
+    app->log->info('Loaded cache file: ' . app->config('modules_cache_file'));
 };
 
 helper find_modules => sub {
@@ -403,7 +390,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.007.
+Version 0.008.
 
 =head1 SYNOPSIS
 

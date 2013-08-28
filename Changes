@@ -1,5 +1,7 @@
 Revision history for perl module App::perldolicious
 
+0.008 2013-08-28
+	- properly log to log file when the config item quiet is set to true
 0.007 2013-08-28
 	- add configuration item auto_download which practically
 	  deprecates the previous config item auto_delete

@@ -4,7 +4,7 @@
       "Ahmad Syaltut <Isyaltut@gmail.com>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.4005, CPAN::Meta::Converter version 2.130880",
+   "generated_by" : "Module::Build version 0.4004, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -40,7 +40,7 @@
    "provides" : {
       "App::perldolicious" : {
          "file" : "lib/App/perldolicious.pm",
-         "version" : "0.007"
+         "version" : "0.008"
       }
    },
    "release_status" : "stable",
@@ -53,5 +53,5 @@
          "url" : "git://github.com/Syaltut/perl-App-perldolicious.git"
       }
    },
-   "version" : "0.007"
+   "version" : "0.008"
 }
