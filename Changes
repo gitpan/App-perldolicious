@@ -1,5 +1,8 @@
 Revision history for perl module App::perldolicious
 
+0.009 2013-08-30
+	- add tests
+	- remove dependency to LWP::Simple (replaced with Mojo::UserAgent)
 0.008 2013-08-28
 	- properly log to log file when the config item quiet is set to true
 0.007 2013-08-28

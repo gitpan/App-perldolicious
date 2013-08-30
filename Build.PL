@@ -8,19 +8,24 @@ Module::Build->new(
     create_readme     => 1,
     script_files      => ['bin/perldolicious'],
     requires          => {
-        'File::Basename'   => 0,
         'File::Path'       => 0,
         'File::Spec'       => 0,
         'File::Temp'       => 0,
         'IO::Zlib'         => '1.10',
-        'LWP::Simple'      => 0,
         'Module::CoreList' => '2.91',
         'Module::Path'     => '0.09',
         'Mojolicious'      => '4.07',
+        'Mojo::UserAgent'  => 0,
         'Mojo::JSON'       => 0,
         'Pod::Cpandoc'     => '0.15',
         'Scalar::Util'     => 0,
         'Storable'         => 0,
+    },
+    test_requires => {
+        'FindBin'    => 0,
+        'Net::Ping'  => 0,
+        'Test::Mojo' => 0,
+        'Test::More' => 0,
     },
     meta_merge => {
         resources => {

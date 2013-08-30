@@ -4,33 +4,22 @@
 use Mojolicious::Lite;
 use 5.010;
 
-use File::Basename ();
-use File::Path     ();
+use File::Path ();
 use File::Spec::Functions qw(catfile);
 use File::Temp       ();
 use IO::Zlib         ();
-use LWP::Simple      ();
+use Mojo::UserAgent  ();
 use Module::CoreList ();
 use Module::Path     ();
 use Mojo::JSON       ();
 use Scalar::Util     ();
 use Storable         ();
 
-our $VERSION = '0.008';
+our $VERSION = '0.009';
 $VERSION = eval $VERSION;
 
-sub download_cpan_package_file {
-    @_ == 2 or die 'invalid arguments';
-    my ($url, $download_location) = @_;
-
-    my $status = LWP::Simple::getstore($url, $download_location);
-    die "Could not retrieve from $url, status: $status"
-      unless LWP::Simple::is_success($status);
-    return 1;
-}
-
 sub get_modules {
-    my $cpan_package_file = shift or die 'no file specified';
+    my $cpan_package_file = shift;
     die "$cpan_package_file doesn't exist" unless -f $cpan_package_file;
 
     my $fh = IO::Zlib->new($cpan_package_file, 'r')
@@ -48,7 +37,6 @@ sub get_modules {
 }
 
 sub write_modules {
-    @_ == 2 or die 'invalid arguments';
     my ($modules_cache_file, $cpan_package_file) = @_;
 
     my $modules = get_modules($cpan_package_file);
@@ -67,7 +55,7 @@ sub compile_pattern {
 }
 
 sub read_json_config {
-    my $config_file = shift or die 'no file specified';
+    my $config_file = shift;
 
     open my $fh, '<', $config_file
       or die "Could not open '$config_file': $!";
@@ -97,25 +85,26 @@ helper setup_modules_file => sub {
             unlink $cache_file or die $!;
         }
 
-        my $url    = 'http://www.cpan.org/modules/02packages.details.txt.gz';
-        my $tmpdir = File::Temp->newdir;
-        my $download_location =
-          catfile($tmpdir->dirname, File::Basename::basename($url));
+        my $url = 'http://www.cpan.org/modules/02packages.details.txt.gz';
+
+        my $tempfile          = File::Temp->new;
+        my $download_location = $tempfile->filename;
 
         app->log->info("Downloading $url to $download_location");
-        download_cpan_package_file($url, $download_location);
+        Mojo::UserAgent->new->get($url)
+          ->res->content->asset->move_to($download_location);
 
-        app->log->info("Please wait, caching modules to $cache_file");
+        app->log->info("Caching modules to $cache_file");
         write_modules($cache_file, $download_location);
 
-        undef $tmpdir;    # delete the temp dir and its contents
     }
 };
 
 helper setup_log => sub {
     my ($self, $confdir) = @_;
     my $logfile = catfile($confdir, 'server.log');
-    if (-f $logfile and -s $logfile > 2_000_000) {
+    my $limit   = 2_000_000; # 2MB
+    if (-f $logfile and -s $logfile > $limit) {
         unlink $logfile or die "Could not delete '$logfile'";
         app->log->info("Deleting $logfile");
     }
@@ -167,11 +156,8 @@ helper find_modules => sub {
 
 helper perldoc => sub {
     my ($self, $module, $p) = @_;
-    my $doc;
-
     my $args = $p->{source} ? '-m' : '-t';
-    chomp($doc = `cpandoc $args $module`);
-
+    chomp(my $doc = `cpandoc $args $module`);
     return $doc;
 };
 
@@ -227,14 +213,10 @@ get '/doc/:module' => sub {
     my ($modstripped) = $module =~ s{::}{-}gr;
     my $release_date  = Module::CoreList->first_release($module);
 
-    # TODO: add this for other operating systems
     my @known_temp_dirs = (qr{/var/folders}, qr{/tmp/}, qr{Local\\Temp});
     my $location = Module::Path::module_path($module);
 
-    if ($location) {
-        $location = undef
-          if grep { $location =~ $_ } @known_temp_dirs;
-    }
+    $location = undef if $location and grep { /$location/ } @known_temp_dirs;
 
     $self->render(
         template        => "doc",
@@ -390,7 +372,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.008.
+Version 0.009.
 
 =head1 SYNOPSIS
 
