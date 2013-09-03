@@ -15,7 +15,7 @@ name: App-perldolicious
 provides:
   App::perldolicious:
     file: lib/App/perldolicious.pm
-    version: 0.009
+    version: 0.010
 requires:
   File::Path: 0
   File::Spec: 0
@@ -33,9 +33,10 @@ resources:
   homepage: https://github.com/Syaltut/perl-App-perldolicious
   license: http://dev.perl.org/licenses/
   repository: git://github.com/Syaltut/perl-App-perldolicious.git
-version: 0.009
+version: 0.010
 x_test_requires:
+  File::Spec: 0
+  File::Which: 0
   FindBin: 0
-  Net::Ping: 0
   Test::Mojo: 0
   Test::More: 0

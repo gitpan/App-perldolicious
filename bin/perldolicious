@@ -7,6 +7,7 @@ use 5.010;
 use File::Path ();
 use File::Spec::Functions qw(catfile);
 use File::Temp       ();
+use File::Which      ();
 use IO::Zlib         ();
 use Mojo::UserAgent  ();
 use Module::CoreList ();
@@ -15,7 +16,7 @@ use Mojo::JSON       ();
 use Scalar::Util     ();
 use Storable         ();
 
-our $VERSION = '0.009';
+our $VERSION = '0.010';
 $VERSION = eval $VERSION;
 
 sub get_modules {
@@ -103,7 +104,7 @@ helper setup_modules_file => sub {
 helper setup_log => sub {
     my ($self, $confdir) = @_;
     my $logfile = catfile($confdir, 'server.log');
-    my $limit   = 2_000_000; # 2MB
+    my $limit = 2_000_000;    # 2MB
     if (-f $logfile and -s $logfile > $limit) {
         unlink $logfile or die "Could not delete '$logfile'";
         app->log->info("Deleting $logfile");
@@ -113,6 +114,11 @@ helper setup_log => sub {
 };
 
 helper initialize => sub {
+    # for some reason cpandoc is not installed on some machines, even though
+    # Pod::Cpandoc is already listed as a prereq in Build.PL
+    die "cpandoc is not installed on your system\n"
+      unless File::Which::which('cpandoc');
+
     my $confdir = $ENV{PERLDOLICIOUS_HOME}
       || catfile($ENV{HOME}, '.perldolicious');
 
@@ -151,7 +157,7 @@ helper find_modules => sub {
     my $modules_cache_file = app->config('modules_cache_file');
 
     state $modules = Storable::retrieve($modules_cache_file);
-    return [ grep { /$pattern/ } @$modules ];
+    return [grep { /$pattern/ } @$modules];
 };
 
 helper perldoc => sub {
@@ -181,15 +187,11 @@ post '/results' => sub {
 
     eval {
         $modules =
-          $self->find_modules($pattern, { ignore_case => $ignore_case });
+          $self->find_modules($pattern, {ignore_case => $ignore_case});
     };
 
     if ($@) {
-        $self->render(
-            template => 'error',
-            message  => "Error: $@",
-            status   => 500
-        );
+        $self->render_exception($@);
     }
     elsif (@$modules) {
         $self->render(
@@ -199,19 +201,16 @@ post '/results' => sub {
         );
     }
     else {
-        $self->render(
-            status   => 500,
-            template => 'error',
-            message  => "Could not find modules that match $pattern"
-        );
+        $self->render_exception("Could not find modules that match $pattern");
     }
 };
 
 get '/doc/:module' => sub {
-    my $self          = shift;
-    my $module        = $self->param('module');
-    my ($modstripped) = $module =~ s{::}{-}gr;
-    my $release_date  = Module::CoreList->first_release($module);
+    my $self   = shift;
+    my $module = $self->param('module');
+
+    (my $distname = $module) =~ s{::}{-}g;
+    my $release_date = Module::CoreList->first_release($module);
 
     my @known_temp_dirs = (qr{/var/folders}, qr{/tmp/}, qr{Local\\Temp});
     my $location = Module::Path::module_path($module);
@@ -221,7 +220,7 @@ get '/doc/:module' => sub {
     $self->render(
         template        => "doc",
         module          => $module,
-        modstripped     => $modstripped,
+        distname        => $distname,
         doc             => $self->perldoc($module),
         location        => $location,
         release_date    => $release_date,
@@ -235,7 +234,7 @@ get '/doc/:module/source' => sub {
     $self->render(
         module      => $module,
         template    => 'source',
-        source_code => $self->perldoc($module, { source => 1 }),
+        source_code => $self->perldoc($module, {source => 1}),
     );
 };
 
@@ -265,6 +264,12 @@ body {
     <%= content %>
   </body>
 </html>
+
+@@ exception.production.html.ep
+
+% title 'Error';
+
+<blink style="color: red"><%= $exception->message %></blink>
 
 @@ index.html.ep
 
@@ -339,7 +344,7 @@ body {
     </a>
   </li>
   <li>
-    <a href="http://cpanratings.perl.org/dist/<%= $modstripped %>">
+    <a href="http://cpanratings.perl.org/dist/<%= $distname %>">
         cpanratings
     </a>
   </li>
@@ -354,14 +359,6 @@ body {
 <%= $source_code %>
 </pre>
 
-@@ error.html.ep
-<!-- ugly hack since I don't know how to customize the message inside the
-     exception template -->
-% title "Error";
-
-<!-- SERIOUS BUSINESS!! -->
-<blink style="color: red"><%= $message %></blink>
-
 __END__
 
 =pod
@@ -372,7 +369,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.009.
+Version 0.010.
 
 =head1 SYNOPSIS
 

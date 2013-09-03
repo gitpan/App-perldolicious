@@ -22,10 +22,11 @@ Module::Build->new(
         'Storable'         => 0,
     },
     test_requires => {
-        'FindBin'    => 0,
-        'Net::Ping'  => 0,
-        'Test::Mojo' => 0,
-        'Test::More' => 0,
+        'File::Spec'  => 0,
+        'File::Which' => 0,
+        'FindBin'     => 0,
+        'Test::Mojo'  => 0,
+        'Test::More'  => 0,
     },
     meta_merge => {
         resources => {

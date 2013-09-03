@@ -1,5 +1,7 @@
 Revision history for perl module App::perldolicious
 
+0.010 2013-09-03
+	- fix buggy tests
 0.009 2013-08-30
 	- add tests
 	- remove dependency to LWP::Simple (replaced with Mojo::UserAgent)
