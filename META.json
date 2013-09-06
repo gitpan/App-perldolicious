@@ -1,7 +1,7 @@
 {
    "abstract" : "Mojolicious::Lite webapp that lets you search (with regexp) and display CPAN modules documentation",
    "author" : [
-      "Ahmad Syaltut <Isyaltut@gmail.com>"
+      "Ahmad Syaltut <syaltut@cpan.org>"
    ],
    "dynamic_config" : 1,
    "generated_by" : "Module::Build version 0.4005, CPAN::Meta::Converter version 2.130880",
@@ -39,7 +39,7 @@
    "provides" : {
       "App::perldolicious" : {
          "file" : "lib/App/perldolicious.pm",
-         "version" : "0.010"
+         "version" : "0.011"
       }
    },
    "release_status" : "stable",
@@ -52,7 +52,7 @@
          "url" : "git://github.com/Syaltut/perl-App-perldolicious.git"
       }
    },
-   "version" : "0.010",
+   "version" : "0.011",
    "x_test_requires" : {
       "File::Spec" : "0",
       "File::Which" : "0",

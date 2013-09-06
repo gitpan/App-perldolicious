@@ -16,7 +16,7 @@ use Mojo::JSON       ();
 use Scalar::Util     ();
 use Storable         ();
 
-our $VERSION = '0.010';
+our $VERSION = '0.011';
 $VERSION = eval $VERSION;
 
 sub get_modules {
@@ -369,7 +369,7 @@ perldolicious - Mojolicious::Lite webapp that lets you search (with regexp) and 
 
 =head1 VERSION
 
-Version 0.010.
+Version 0.011.
 
 =head1 SYNOPSIS
 
@@ -457,7 +457,7 @@ memory.
 
 =head1 AUTHOR
 
-Ahmad Syaltut <Isyaltut@gmail.com>
+Ahmad Syaltut <syaltut@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 

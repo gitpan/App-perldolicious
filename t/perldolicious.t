@@ -11,6 +11,8 @@ use File::Which ();
 my $script = "$FindBin::Bin/../bin/perldolicious";
 require $script;
 
+pass;
+
 plan skip_all => 'cpandoc is not installed'
   unless File::Which::which('cpandoc');
 

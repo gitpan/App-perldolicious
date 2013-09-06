@@ -1,6 +1,6 @@
 package App::perldolicious;
 
-our $VERSION = '0.010';
+our $VERSION = '0.011';
 $VERSION = eval $VERSION;
 
 1;
@@ -13,7 +13,7 @@ App::perldolicious - Mojolicious::Lite webapp that lets you search (with regexp)
 
 =head1 VERSION
 
-Version 0.010.
+Version 0.011.
 
 =head1 DESCRIPTION
 
@@ -21,7 +21,7 @@ See the documentation of B<perldolicious(1)>.
 
 =head1 AUTHOR
 
-Ahmad Syaltut <Isyaltut@gmail.com>
+Ahmad Syaltut <syaltut@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
